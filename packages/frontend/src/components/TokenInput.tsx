@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { getAuthToken, setAuthToken, clearAuthToken, validateToken, type TokenValidation } from '@/lib/api'
-import { Key, Check, X, Loader2 } from 'lucide-react'
+import { Key, X, Loader2 } from 'lucide-react'
 
 interface TokenInputProps {
   onAuthChange?: (auth: TokenValidation) => void
@@ -58,32 +58,9 @@ export function TokenInput({ onAuthChange }: TokenInputProps) {
     setIsValidating(false)
   }
 
-  const handleClear = () => {
-    clearAuthToken()
-    setToken('')
-    setAuth({ valid: false })
-    setShowError(false)
-    onAuthChangeRef.current?.({ valid: false })
-  }
-
+  // Wenn eingeloggt, nichts anzeigen
   if (auth.valid) {
-    return (
-      <div className="flex items-center justify-between gap-3 p-2 rounded-md bg-green-50 border border-green-200">
-        <div className="flex items-center gap-2 text-sm text-green-700">
-          <Check className="h-4 w-4" />
-          <span className="font-medium">{auth.username}</span>
-          <span className="text-green-600 text-xs">({auth.rateLimit} Req/Min)</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClear}
-          className="h-7 text-xs text-green-700 hover:text-green-900 hover:bg-green-100"
-        >
-          Abmelden
-        </Button>
-      </div>
-    )
+    return null
   }
 
   return (
