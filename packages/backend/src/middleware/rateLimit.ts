@@ -7,7 +7,7 @@ interface RateLimitEntry {
 }
 
 const WINDOW_MS = 60 * 1000 // 1 minute
-const AUTH_ENDPOINT_LIMIT = 5 // Sehr strikt für Auth-Endpunkt
+const AUTH_ENDPOINT_LIMIT = 20 // Auth-Endpunkt (Token-Validierung)
 const store = new Map<string, RateLimitEntry>()
 
 // Cleanup old entries periodically
@@ -29,6 +29,12 @@ function getClientIp(c: Context): string {
 // Striktes Rate-Limiting für Auth-Endpunkt (IP-basiert)
 export function authRateLimitMiddleware() {
   return async (c: Context, next: Next) => {
+    // OPTIONS (CORS preflight) nicht limitieren
+    if (c.req.method === 'OPTIONS') {
+      await next()
+      return
+    }
+
     const now = Date.now()
     const identifier = `auth:${getClientIp(c)}`
 
@@ -63,6 +69,12 @@ export function authRateLimitMiddleware() {
 // Rate-Limiting für authentifizierte Nutzer
 export function rateLimitMiddleware() {
   return async (c: Context, next: Next) => {
+    // OPTIONS (CORS preflight) nicht limitieren
+    if (c.req.method === 'OPTIONS') {
+      await next()
+      return
+    }
+
     const auth = getAuth(c)
     const now = Date.now()
 
