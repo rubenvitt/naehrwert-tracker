@@ -13,8 +13,13 @@ import { rateLimitMiddleware, authRateLimitMiddleware } from './middleware/rateL
 const app = new Hono()
 
 app.use('*', logger())
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.CORS_ORIGIN,
+].filter(Boolean) as string[]
+
 app.use('/api/*', cors({
-  origin: ['http://localhost:5173'],
+  origin: allowedOrigins,
   allowMethods: ['POST', 'GET', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],

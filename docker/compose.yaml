@@ -11,6 +11,7 @@ services:
       - PORT=${BACKEND_PORT:-3000}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - API_TOKENS=${API_TOKENS}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     networks:
       - infrastructure
     labels:
