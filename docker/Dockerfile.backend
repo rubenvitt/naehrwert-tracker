@@ -10,13 +10,16 @@ WORKDIR /app
 # pnpm installieren
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Workspace-Dateien kopieren
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/backend/package.json ./packages/backend/
+
 # Dependencies installieren
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter=backend
 
 # Source kopieren und bauen
-COPY . .
-RUN pnpm build
+COPY packages/backend ./packages/backend
+RUN pnpm --filter=backend build
 
 # =============================================================================
 # Production Stage
@@ -28,12 +31,17 @@ WORKDIR /app
 # pnpm installieren
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Workspace-Dateien kopieren
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/backend/package.json ./packages/backend/
+
 # Nur Production Dependencies
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --filter=backend --prod
 
 # Build-Artefakte kopieren
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
+
+WORKDIR /app/packages/backend
 
 # Non-root User
 RUN addgroup -g 1001 -S nodejs && \
