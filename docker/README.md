@@ -1,71 +1,53 @@
-# Docker Deployment
+# Docker Deployment (Backend)
 
 ## Voraussetzungen
 
 - Docker & Docker Compose
 - Traefik mit `infrastructure` Netzwerk
-- OpenAI API Key
+- OpenRouter API Key
 
 ## Quick Start
 
 ```bash
 cd docker
 
-# 1. Setup ausführen
+# 1. Setup ausführen (generiert API Token)
 ./setup.sh
 
-# 2. OpenAI API Key eintragen
+# 2. OpenRouter API Key eintragen
 nano stack.env
 
 # 3. Starten
 docker compose up -d
 ```
 
-## Dateien
-
-| Datei | Beschreibung |
-|-------|--------------|
-| `compose.yaml` | Docker Compose Stack |
-| `stack.env.example` | Vorlage für Umgebungsvariablen |
-| `stack.env` | Deine Konfiguration (nicht committen!) |
-| `Dockerfile.frontend` | Multi-stage Build für React App |
-| `Dockerfile.backend` | Multi-stage Build für Hono API |
-| `nginx.conf` | Nginx Config für SPA |
-
 ## Konfiguration
 
+| Variable | Beschreibung | Beispiel |
+|----------|--------------|----------|
+| `OPENROUTER_API_KEY` | OpenRouter API Key | `sk-or-...` |
+| `API_TOKENS` | User-Tokens | `token:user:100` |
+| `API_DOMAIN` | Backend Domain | `naehrwert-api.rubeen.dev` |
+
+### API Tokens
+
+Format: `token:username:rateLimit`
+
+Mehrere User: `token1:user1:100,token2:user2:50`
+
 ```bash
-# Projekt-Name
-COMPOSE_PROJECT_NAME=naehrwert
-
-# Domains anpassen
-APP_DOMAIN=naehrwert.rubeen.dev
-API_DOMAIN=naehrwert-api.rubeen.dev
-
-# OpenAI API Key (erforderlich!)
-OPENAI_API_KEY=sk-...
+# Neuen Token generieren
+openssl rand -hex 24
 ```
 
-## Services
-
-| Service | Beschreibung | URL |
-|---------|--------------|-----|
-| Frontend | React SPA via Nginx | `https://naehrwert.rubeen.dev` |
-| Backend | Hono API | `https://naehrwert-api.rubeen.dev` |
-
-## Lokales Testen
-
-Ohne Traefik kannst du die Ports freigeben:
+## Lokales Testen (ohne Traefik)
 
 ```yaml
 # In compose.yaml hinzufügen:
 services:
-  frontend:
-    ports:
-      - "8080:80"
   backend:
     ports:
       - "3000:3000"
 ```
 
-Dann erreichbar unter `http://localhost:8080` und `http://localhost:3000`.
+Dann erreichbar unter `http://localhost:3000`

@@ -53,8 +53,16 @@ export class RateLimitError extends Error {
   }
 }
 
+// API Base URL (Runtime-Config aus Docker oder Build-Zeit Fallback)
+declare global {
+  interface Window {
+    __CONFIG__?: { API_URL?: string }
+  }
+}
+const API_BASE_URL = window.__CONFIG__?.API_URL || import.meta.env.VITE_API_URL || ''
+
 // API Fetch Wrapper
-async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken()
   const headers = new Headers(options.headers)
 
@@ -62,6 +70,7 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
     headers.set('Authorization', `Bearer ${token}`)
   }
 
+  const url = `${API_BASE_URL}${path}`
   const response = await fetch(url, { ...options, headers })
 
   if (response.status === 429) {

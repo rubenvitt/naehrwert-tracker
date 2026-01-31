@@ -1,32 +1,8 @@
 # =============================================================================
-# Nährwert-Tracker - Docker Compose Stack
-# =============================================================================
-# Frontend: React + Vite (nginx)
-# Backend: Hono + OpenAI
+# Nährwert-Tracker - Docker Compose Stack (Backend only)
 # =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # Frontend (Nginx mit statischen Dateien)
-  # ---------------------------------------------------------------------------
-  frontend:
-    image: ghcr.io/rubenvitt/naehrwert-tracker/frontend:latest
-    restart: unless-stopped
-    depends_on:
-      - backend
-    networks:
-      - infrastructure
-      - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}.rule=Host(`${APP_DOMAIN:-naehrwert.rubeen.dev}`)"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}.entrypoints=websecure"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}.tls=true"
-      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-naehrwert}.loadbalancer.server.port=80"
-
-  # ---------------------------------------------------------------------------
-  # Backend (Hono API)
-  # ---------------------------------------------------------------------------
   backend:
     image: ghcr.io/rubenvitt/naehrwert-tracker/backend:latest
     restart: unless-stopped
@@ -37,7 +13,6 @@ services:
       - API_TOKENS=${API_TOKENS}
     networks:
       - infrastructure
-      - default
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}-api.rule=Host(`${API_DOMAIN:-naehrwert-api.rubeen.dev}`)"
@@ -50,11 +25,6 @@ services:
       timeout: 10s
       retries: 3
 
-# =============================================================================
-# Networks
-# =============================================================================
 networks:
   infrastructure:
     external: true
-  default:
-    driver: bridge
