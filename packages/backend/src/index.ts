@@ -34,6 +34,7 @@ app.route('/api', analyzeRoute)
 app.route('/api', modelsRoute)
 
 app.get('/', (c) => c.text('Nährwert-Tracker API'))
+app.get('/health', (c) => c.json({ status: 'ok' }))
 
 const port = 3000
 console.log(`Server running on http://localhost:${port}`)
