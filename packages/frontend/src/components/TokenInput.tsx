@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { getAuthToken, setAuthToken, clearAuthToken, validateToken, type TokenValidation } from '@/lib/api'
@@ -14,6 +14,10 @@ export function TokenInput({ onAuthChange }: TokenInputProps) {
   const [auth, setAuth] = useState<TokenValidation>({ valid: false })
   const [showError, setShowError] = useState(false)
 
+  // Ref um callback-Änderungen nicht als Dependency zu haben
+  const onAuthChangeRef = useRef(onAuthChange)
+  onAuthChangeRef.current = onAuthChange
+
   const checkStoredToken = useCallback(async () => {
     const stored = getAuthToken()
     if (stored) {
@@ -21,14 +25,14 @@ export function TokenInput({ onAuthChange }: TokenInputProps) {
       setIsValidating(true)
       const result = await validateToken()
       setAuth(result)
-      onAuthChange?.(result)
+      onAuthChangeRef.current?.(result)
       if (!result.valid) {
         clearAuthToken()
         setToken('')
       }
       setIsValidating(false)
     }
-  }, [onAuthChange])
+  }, [])
 
   useEffect(() => {
     checkStoredToken()
@@ -43,7 +47,7 @@ export function TokenInput({ onAuthChange }: TokenInputProps) {
 
     const result = await validateToken()
     setAuth(result)
-    onAuthChange?.(result)
+    onAuthChangeRef.current?.(result)
 
     if (!result.valid) {
       clearAuthToken()
@@ -59,7 +63,7 @@ export function TokenInput({ onAuthChange }: TokenInputProps) {
     setToken('')
     setAuth({ valid: false })
     setShowError(false)
-    onAuthChange?.({ valid: false })
+    onAuthChangeRef.current?.({ valid: false })
   }
 
   if (auth.valid) {
