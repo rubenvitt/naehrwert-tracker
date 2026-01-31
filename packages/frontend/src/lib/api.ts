@@ -166,7 +166,12 @@ export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.readAsDataURL(file)
-    reader.onload = () => resolve(reader.result as string)
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      // Entferne "data:image/...;base64," Prefix, nur reines Base64 zurückgeben
+      const base64 = dataUrl.split(',')[1]
+      resolve(base64)
+    }
     reader.onerror = (error) => reject(error)
   })
 }
