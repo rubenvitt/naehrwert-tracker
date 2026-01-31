@@ -6,15 +6,17 @@ import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { fileToBase64 } from '@/lib/api'
 
+function isHeicFile(file: File): boolean {
+  return file.type === 'image/heic' ||
+         file.type === 'image/heif' ||
+         file.name.toLowerCase().endsWith('.heic') ||
+         file.name.toLowerCase().endsWith('.heif')
+}
+
 async function convertHeicToJpeg(file: File): Promise<File> {
-  // Prüfen ob HEIC/HEIF
-  const isHeic = file.type === 'image/heic' ||
-                 file.type === 'image/heif' ||
-                 file.name.toLowerCase().endsWith('.heic') ||
-                 file.name.toLowerCase().endsWith('.heif')
+  if (!isHeicFile(file)) return file
 
-  if (!isHeic) return file
-
+  console.log('Converting HEIC to JPEG...')
   const blob = await heic2any({
     blob: file,
     toType: 'image/jpeg',
@@ -22,9 +24,11 @@ async function convertHeicToJpeg(file: File): Promise<File> {
   })
 
   const resultBlob = Array.isArray(blob) ? blob[0] : blob
-  return new File([resultBlob], file.name.replace(/\.heic$/i, '.jpg'), {
+  const newFile = new File([resultBlob], file.name.replace(/\.heic$/i, '.jpg'), {
     type: 'image/jpeg',
   })
+  console.log('HEIC conversion successful:', newFile.type, newFile.size)
+  return newFile
 }
 
 interface AnalysisFormProps {
@@ -38,9 +42,11 @@ export function AnalysisForm({ onSubmit, isLoading }: AnalysisFormProps) {
   const [description, setDescription] = useState('')
 
   const [isConverting, setIsConverting] = useState(false)
+  const [conversionError, setConversionError] = useState<string | null>(null)
 
   const handleImageSelect = useCallback(async (file: File) => {
     setIsConverting(true)
+    setConversionError(null)
     try {
       const convertedFile = await convertHeicToJpeg(file)
       setSelectedFile(convertedFile)
@@ -48,10 +54,17 @@ export function AnalysisForm({ onSubmit, isLoading }: AnalysisFormProps) {
       setPreview(url)
     } catch (err) {
       console.error('Fehler bei Bildkonvertierung:', err)
-      // Fallback: Original-Datei verwenden
-      setSelectedFile(file)
-      const url = URL.createObjectURL(file)
-      setPreview(url)
+      // HEIC kann nicht verwendet werden wenn Konvertierung fehlschlägt
+      if (isHeicFile(file)) {
+        setConversionError('HEIC-Bilder werden auf diesem Gerät nicht unterstützt. Bitte verwende JPG oder PNG.')
+        setSelectedFile(null)
+        setPreview(null)
+      } else {
+        // Andere Formate: Original verwenden
+        setSelectedFile(file)
+        const url = URL.createObjectURL(file)
+        setPreview(url)
+      }
     } finally {
       setIsConverting(false)
     }
@@ -93,6 +106,9 @@ export function AnalysisForm({ onSubmit, isLoading }: AnalysisFormProps) {
           <Loader2 className="h-4 w-4 animate-spin" />
           Konvertiere HEIC...
         </p>
+      )}
+      {conversionError && (
+        <p className="text-sm text-red-500">{conversionError}</p>
       )}
 
       <div className="relative">
