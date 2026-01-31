@@ -1,0 +1,63 @@
+# =============================================================================
+# Nährwert-Tracker - Docker Compose Stack
+# =============================================================================
+# Frontend: React + Vite (nginx)
+# Backend: Hono + OpenAI
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Frontend (Nginx mit statischen Dateien)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../packages/frontend
+      dockerfile: ../../docker/Dockerfile.frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - infrastructure
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}.rule=Host(`${APP_DOMAIN:-naehrwert.rubeen.dev}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}.tls=true"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-naehrwert}.loadbalancer.server.port=80"
+
+  # ---------------------------------------------------------------------------
+  # Backend (Hono API)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ../packages/backend
+      dockerfile: ../../docker/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=${BACKEND_PORT:-3000}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - infrastructure
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}-api.rule=Host(`${API_DOMAIN:-naehrwert-api.rubeen.dev}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}-api.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-naehrwert}-api.tls=true"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-naehrwert}-api.loadbalancer.server.port=${BACKEND_PORT:-3000}"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:${BACKEND_PORT:-3000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  infrastructure:
+    external: true
+  default:
+    driver: bridge

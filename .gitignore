@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+*.local
+.DS_Store
+
+# Docker Secrets
+docker/stack.env
+**/stack.env
+**/*.env.local
