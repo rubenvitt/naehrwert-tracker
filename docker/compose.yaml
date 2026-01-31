@@ -10,9 +10,7 @@ services:
   # Frontend (Nginx mit statischen Dateien)
   # ---------------------------------------------------------------------------
   frontend:
-    build:
-      context: ../packages/frontend
-      dockerfile: ../../docker/Dockerfile.frontend
+    image: ghcr.io/rubenvitt/naehrwert-tracker/frontend:latest
     restart: unless-stopped
     depends_on:
       - backend
@@ -30,14 +28,13 @@ services:
   # Backend (Hono API)
   # ---------------------------------------------------------------------------
   backend:
-    build:
-      context: ../packages/backend
-      dockerfile: ../../docker/Dockerfile.backend
+    image: ghcr.io/rubenvitt/naehrwert-tracker/backend:latest
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - PORT=${BACKEND_PORT:-3000}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - API_TOKENS=${API_TOKENS}
     networks:
       - infrastructure
       - default
