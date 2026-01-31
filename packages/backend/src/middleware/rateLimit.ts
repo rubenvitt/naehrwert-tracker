@@ -7,7 +7,7 @@ interface RateLimitEntry {
 }
 
 const WINDOW_MS = 60 * 1000 // 1 minute
-const AUTH_ENDPOINT_LIMIT = 20 // Auth-Endpunkt (Token-Validierung)
+const FAILED_AUTH_LIMIT = 10 // Nur fehlgeschlagene Auth-Versuche
 const store = new Map<string, RateLimitEntry>()
 
 // Cleanup old entries periodically
@@ -26,7 +26,7 @@ function getClientIp(c: Context): string {
     || 'unknown'
 }
 
-// Striktes Rate-Limiting für Auth-Endpunkt (IP-basiert)
+// Rate-Limiting nur für fehlgeschlagene Auth-Versuche (Brute-Force-Schutz)
 export function authRateLimitMiddleware() {
   return async (c: Context, next: Next) => {
     // OPTIONS (CORS preflight) nicht limitieren
@@ -36,33 +36,42 @@ export function authRateLimitMiddleware() {
     }
 
     const now = Date.now()
-    const identifier = `auth:${getClientIp(c)}`
+    const ip = getClientIp(c)
+    const identifier = `auth-fail:${ip}`
 
     let entry = store.get(identifier)
 
-    if (!entry || entry.resetAt <= now) {
-      entry = { count: 0, resetAt: now + WINDOW_MS }
-      store.set(identifier, entry)
+    // Reset wenn Zeitfenster abgelaufen
+    if (entry && entry.resetAt <= now) {
+      store.delete(identifier)
+      entry = undefined
     }
 
-    entry.count++
-
-    const remaining = Math.max(0, AUTH_ENDPOINT_LIMIT - entry.count)
-    const resetInSeconds = Math.ceil((entry.resetAt - now) / 1000)
-
-    c.header('X-RateLimit-Limit', String(AUTH_ENDPOINT_LIMIT))
-    c.header('X-RateLimit-Remaining', String(remaining))
-    c.header('X-RateLimit-Reset', String(Math.ceil(entry.resetAt / 1000)))
-
-    if (entry.count > AUTH_ENDPOINT_LIMIT) {
+    // Prüfen ob IP schon zu viele Fehlversuche hat
+    if (entry && entry.count >= FAILED_AUTH_LIMIT) {
+      const resetInSeconds = Math.ceil((entry.resetAt - now) / 1000)
       return c.json({
         success: false,
-        error: 'Too many authentication attempts',
+        error: 'Too many failed authentication attempts',
         retryAfter: resetInSeconds,
       }, 429)
     }
 
+    // Request durchlassen
     await next()
+
+    // Nach der Response: War es ein fehlgeschlagener Auth-Versuch?
+    const auth = getAuth(c)
+    const hasToken = c.req.header('Authorization')?.startsWith('Bearer ')
+
+    // Nur zählen wenn Token mitgeschickt aber ungültig
+    if (hasToken && !auth.isAuthenticated) {
+      if (!entry) {
+        entry = { count: 0, resetAt: now + WINDOW_MS }
+        store.set(identifier, entry)
+      }
+      entry.count++
+    }
   }
 }
 
