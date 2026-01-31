@@ -89,14 +89,16 @@ function App() {
           </p>
         </div>
 
-        {/* Token-Eingabe */}
-        <Card>
-          <CardContent className="pt-6">
-            <TokenInput onAuthChange={handleAuthChange} />
-          </CardContent>
-        </Card>
+        {/* Token-Eingabe - nur wenn nicht authentifiziert */}
+        {!auth.valid && (
+          <Card>
+            <CardContent className="pt-6">
+              <TokenInput onAuthChange={handleAuthChange} />
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Nur anzeigen wenn authentifiziert */}
+        {/* Hauptinhalt - nur wenn authentifiziert */}
         {auth.valid ? (
           <>
             <div className="flex justify-center">
