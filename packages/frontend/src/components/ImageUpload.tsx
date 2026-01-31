@@ -88,7 +88,7 @@ export function ImageUpload({
         <p className="mb-2 text-sm text-gray-500">
           <span className="font-semibold">Klicken zum Hochladen</span> oder Bild hierher ziehen
         </p>
-        <p className="text-xs text-gray-400">PNG, JPG oder WEBP</p>
+        <p className="text-xs text-gray-400">PNG, JPG, WEBP oder HEIC</p>
       </div>
       <input
         type="file"

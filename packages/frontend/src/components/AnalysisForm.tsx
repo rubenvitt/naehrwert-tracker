@@ -1,9 +1,31 @@
 import { useState, useCallback } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
+import heic2any from 'heic2any'
 import { ImageUpload } from './ImageUpload'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { fileToBase64 } from '@/lib/api'
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  // Prüfen ob HEIC/HEIF
+  const isHeic = file.type === 'image/heic' ||
+                 file.type === 'image/heif' ||
+                 file.name.toLowerCase().endsWith('.heic') ||
+                 file.name.toLowerCase().endsWith('.heif')
+
+  if (!isHeic) return file
+
+  const blob = await heic2any({
+    blob: file,
+    toType: 'image/jpeg',
+    quality: 0.9,
+  })
+
+  const resultBlob = Array.isArray(blob) ? blob[0] : blob
+  return new File([resultBlob], file.name.replace(/\.heic$/i, '.jpg'), {
+    type: 'image/jpeg',
+  })
+}
 
 interface AnalysisFormProps {
   onSubmit: (imageBase64?: string, mimeType?: string, description?: string) => Promise<void>
@@ -15,10 +37,24 @@ export function AnalysisForm({ onSubmit, isLoading }: AnalysisFormProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [description, setDescription] = useState('')
 
-  const handleImageSelect = useCallback((file: File) => {
-    setSelectedFile(file)
-    const url = URL.createObjectURL(file)
-    setPreview(url)
+  const [isConverting, setIsConverting] = useState(false)
+
+  const handleImageSelect = useCallback(async (file: File) => {
+    setIsConverting(true)
+    try {
+      const convertedFile = await convertHeicToJpeg(file)
+      setSelectedFile(convertedFile)
+      const url = URL.createObjectURL(convertedFile)
+      setPreview(url)
+    } catch (err) {
+      console.error('Fehler bei Bildkonvertierung:', err)
+      // Fallback: Original-Datei verwenden
+      setSelectedFile(file)
+      const url = URL.createObjectURL(file)
+      setPreview(url)
+    } finally {
+      setIsConverting(false)
+    }
   }, [])
 
   const handleImageClear = useCallback(() => {
@@ -50,8 +86,14 @@ export function AnalysisForm({ onSubmit, isLoading }: AnalysisFormProps) {
         onImageSelect={handleImageSelect}
         onImageClear={handleImageClear}
         preview={preview}
-        disabled={isLoading}
+        disabled={isLoading || isConverting}
       />
+      {isConverting && (
+        <p className="text-sm text-gray-500 flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Konvertiere HEIC...
+        </p>
+      )}
 
       <div className="relative">
         <Input
